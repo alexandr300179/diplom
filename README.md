@@ -138,7 +138,7 @@ ansible-playbook -i inventory.ini nginx.yml
 
 **Доступ к панели** 
 
-[Zabbix](http://62.84.113.117/zabbix)
+[Zabbix](http://93.77.182.155/zabbix)
 
 логин - Admin, пароль - zabbix
 
@@ -154,7 +154,7 @@ ansible-playbook -i inventory.ini nginx.yml
 
 ![Kibana](img/15%20kibana.PNG)
 
-[Elastic](http://62.84.112.228:5601/app/discover) 
+[Elastic](http://130.193.49.192:5601/app/discover) 
 
 **Elasticsearch**
 

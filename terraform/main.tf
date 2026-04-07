@@ -314,6 +314,12 @@ resource "yandex_vpc_security_group" "web_sg" {
     protocol       = "ANY"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
+  
+  ingress {
+    protocol       = "TCP"
+    port           = 10050
+    v4_cidr_blocks = ["10.10.0.0/16"]
+  }
 }
 
 resource "yandex_vpc_security_group" "zabbix_sg" {
