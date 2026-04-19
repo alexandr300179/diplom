@@ -1,0 +1,79 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: remove elastic repo (fix apt)
+      shell: rm -f /etc/apt/sources.list.d/*elastic*
+      ignore_errors: yes
+
+    - name: update apt cache
+      apt:
+        update_cache: yes
+
+    - name: install docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: install docker-compose
+      apt:
+        name: docker-compose
+        state: present
+
+# ================= ELASTIC =================
+- hosts: elastic
+  become: yes
+  tasks:
+    - name: copy docker-compose
+      copy:
+        src: docker/elastic/docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+
+    - name: remove old container
+      shell: docker rm -f elasticsearch || true
+
+    - name: start elastic
+      shell: docker-compose up -d
+      args:
+        chdir: /home/ubuntu
+
+# ================= KIBANA =================
+- hosts: kibana
+  become: yes
+  tasks:
+    - name: copy docker-compose
+      copy:
+        src: docker/kibana/docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+
+    - name: remove old container
+      shell: docker rm -f kibana || true
+
+    - name: start kibana
+      shell: docker-compose up -d
+      args:
+        chdir: /home/ubuntu
+
+# ================= FILEBEAT =================
+- hosts: web
+  become: yes
+  tasks:
+    - name: copy filebeat config
+      copy:
+        src: docker/filebeat/filebeat.yml
+        dest: /home/ubuntu/filebeat.yml
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: copy docker-compose
+      copy:
+        src: docker/filebeat/docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+
+    - name: remove old container
+      shell: docker rm -f filebeat || true
+
+    - name: start filebeat
+      shell: docker-compose up -d
+      args:
+        chdir: /home/ubuntu

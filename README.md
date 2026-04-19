@@ -165,193 +165,47 @@ ansible-playbook -i inventory.ini nginx.yml
 ```
 ansible/
 ├── inventory.ini
+├── nginx.yml
+├── deploy.yml
+├── files/
+│   ├── nginx.conf
+│   └── index.html
 ├── docker/
 │   ├── elastic/
-│   │   └── docker-compose.yml
 │   ├── kibana/
-│   │   └── docker-compose.yml
 │   └── filebeat/
-│       ├── docker-compose.yml
-│       └── filebeat.yml
-├── deploy.yml
 ```
 ![Ansible](img/ansible%20на%20bastion.PNG) 
 
-
 **inventory.ini**
 
-```
-[web]
-web1.ru-central1.internal
-web2.ru-central1.internal
-
-[elastic]
-elastic.ru-central1.internal
-
-[kibana]
-kibana.ru-central1.internal
-
-[zabbix]
-zabbix.ru-central1.internal
-
-[all:vars]
-ansible_user=ubuntu
-ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-
-```
+[inventory.ini](ansible/inventory.ini) 
 
 **docker/elastic/docker-compose.yml**
 
-```
-version: '3.7'
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "9200:9200"
-    restart: always
-
-```
+[elastic](ansible/docker/elastic/docker-compose.yml) 
 
 **docker/kibana/docker-compose.yml**
 
-```
-version: '3.7'
-
-services:
-kibana:
-image: docker.elastic.co/kibana/kibana:8.12.2
-container_name: kibana
-environment:
-- ELASTICSEARCH_HOSTS=http://elastic.ru-central1.internal:9200
-ports:
-- "5601:5601"
-restart: always
-
-```
+[kibana](ansible/docker/kibana/docker-compose.yml) 
 
 **docker/filebeat/filebeat.yml**
 
-```
-filebeat.inputs:
-- type: filestream
-  enabled: true
-  paths:
-    - /var/log/nginx/access.log
-    - /var/log/nginx/error.log
-
-output.elasticsearch:
-  hosts: ["http://elastic.ru-central1.internal:9200"]
-
-```
+[filebeat](ansible/docker/filebeat/filebeat.yml) 
 
 **docker/filebeat/docker-compose.yml**
 
-```
-version: '3.7'
-
-services:
-filebeat:
-image: docker.elastic.co/beats/filebeat:8.12.2
-user: root
-volumes:
-- ./filebeat.yml:/usr/share/filebeat/filebeat.yml
-- /var/log/nginx:/var/log/nginx
-restart: always
-
-```
+[filebeat](ansible/docker/filebeat/docker-compose.yml) 
 
 **deploy.yml**
 
-```
-- hosts: all
-  become: yes
-  tasks:
-    - name: remove elastic repo (fix apt)
-      shell: rm -f /etc/apt/sources.list.d/*elastic*
-      ignore_errors: yes
+[deploy.yml](ansible/deploy.yml) 
 
-    - name: update apt cache
-      apt:
-        update_cache: yes
+**nginx.yml**
 
-    - name: install docker
-      apt:
-        name: docker.io
-        state: present
+[nginx.yml](ansible/nginx.yml) 
 
-    - name: install docker-compose
-      apt:
-        name: docker-compose
-        state: present
-
-# ================= ELASTIC =================
-- hosts: elastic
-  become: yes
-  tasks:
-    - name: copy docker-compose
-      copy:
-        src: docker/elastic/docker-compose.yml
-        dest: /home/ubuntu/docker-compose.yml
-
-    - name: remove old container
-      shell: docker rm -f elasticsearch || true
-
-    - name: start elastic
-      shell: docker-compose up -d
-      args:
-        chdir: /home/ubuntu
-
-# ================= KIBANA =================
-- hosts: kibana
-  become: yes
-  tasks:
-    - name: copy docker-compose
-      copy:
-        src: docker/kibana/docker-compose.yml
-        dest: /home/ubuntu/docker-compose.yml
-
-    - name: remove old container
-      shell: docker rm -f kibana || true
-
-    - name: start kibana
-      shell: docker-compose up -d
-      args:
-        chdir: /home/ubuntu
-
-# ================= FILEBEAT =================
-- hosts: web
-  become: yes
-  tasks:
-    - name: copy filebeat config
-      copy:
-        src: docker/filebeat/filebeat.yml
-        dest: /home/ubuntu/filebeat.yml
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: copy docker-compose
-      copy:
-        src: docker/filebeat/docker-compose.yml
-        dest: /home/ubuntu/docker-compose.yml
-
-    - name: remove old container
-      shell: docker rm -f filebeat || true
-
-    - name: start filebeat
-      shell: docker-compose up -d
-      args:
-        chdir: /home/ubuntu
-
-```
-
-**Запускаем - ansible-playbook -i inventory.ini deploy.yml**
+**Запускаем - ansible-playbook -i inventory.ini nginx.yml**
 
 
 ### 7. SECURITY GROUPS
